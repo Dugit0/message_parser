@@ -2,6 +2,7 @@
 
 from bs4 import BeautifulSoup
 import enum
+import os
 
 
 class MessageType(enum.Enum):
@@ -32,12 +33,18 @@ class Chat:
 
 
 
+data_path = os.path.join("data", "chats", "chat_008", "messages.html")
 
-
-data_path = r"data/messages.html"
-
-with open(data_path) as data_file:
+with open(data_path, encoding="utf-8") as data_file:
     soup = BeautifulSoup(data_file, "lxml")
+    messages_list = soup.body.div.find("div", class_="page_body").div.find_all(lambda tag: tag["id"][:7] == "message")
+    for i in range(5):
+        print(messages_list[i].prettify())
+        print("----------")
+    # with open("out.html", "w", encoding="utf-8") as f_out:
+    #     print(messages_list.prettify(), file=f_out)
+
+
 
 # print(soup.prettify())
 
