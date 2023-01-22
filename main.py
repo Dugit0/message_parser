@@ -1,4 +1,4 @@
-#!/bin/python
+#!/home/dmitry/IT/Fun/message_parser/venv/bin/python
 
 from bs4 import BeautifulSoup
 import enum
@@ -15,8 +15,8 @@ class MessageType(enum.Enum):
 
 
 class Message:
-    def __init__(self, path):
-        # self.author = author
+    def __init__(self, soup, author):
+        self.author = author
         pass
     pass
 
@@ -55,9 +55,9 @@ for q in tqdm(tmp):
         messages_list.extend(messages_list_part)
     print(len(messages_list))
 
-for i in messages_list:
-    print(i)
-    print("--------------------------")
+# for i in messages_list:
+#     print(i)
+#     print("--------------------------")
     # for i in range(5):
     #     print(messages_list_part[i].prettify())
     #     print("----------")
