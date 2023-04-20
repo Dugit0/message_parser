@@ -1,8 +1,7 @@
 #!/home/dmitry/IT/Fun/message_parser/venv/bin/python
-import sys
-
 from bs4 import BeautifulSoup
 import enum
+import sys
 import os
 from tqdm import tqdm
 import datetime
@@ -45,24 +44,46 @@ class Circle(Message):
 
 
 class Call(Message):
-    pass
+    def __init__(self, soup, author):
+        super().__init__(soup, author)
+        media_wrap = self.soup.find(class_="body").find(class_="media_wrap")
+        call_status_text = media_wrap.find(class_="media_call").find(class_="body").find(class_="status")
+        call_status_text = call_status_text.text.strip()
+        # Cancelled - отмененный
+        self.call_status = call_status_text.split()[0]
+        left_ind = call_status_text.find("(")
+        if left_ind == -1:
+            self.duration = -1
+        else:
+            right_ind = call_status_text.find(")")
+            time = call_status_text[left_ind + 1:right_ind]
+            self.duration = int(time.split()[0])
 
 
 class Sticker(Message):
+    def __init__(self, soup, author):
+        super().__init__(soup, author)
+
     pass
 
 
 class Common(Message):
+    def __init__(self, soup, author):
+        super().__init__(soup, author)
+
     pass
 
 
 class Forwarded(Message):
+    def __init__(self, soup, author):
+        super().__init__(soup, author)
+
     pass
 
 
 class Chat:
-    def __init__(self, file_chat_name, real_name):
-        self.chat_name = real_name
+    def __init__(self, file_chat_name):
+        self.chat_name = get_real_chat_name(file_chat_name)
         soups = get_message_soups(file_chat_name)
         self.messages = []
         name = None
@@ -71,10 +92,14 @@ class Chat:
                 name_tag = soup.find("div", class_="body").find("div", class_="from_name")
                 name = name_tag.text.strip()
             assert not (name is None)
-            self.messages.append(Message(soup, name))
+            self.messages.append(create_message(soup, name))
 
 
 def get_all_message_files():
+    """
+
+    :return: All paths for message file in all chats
+    """
     chats_path = os.path.join("data", "chats")
     all_message_files = []
     for chat_name in os.listdir(chats_path):
@@ -85,6 +110,11 @@ def get_all_message_files():
 
 
 def get_message_soups(chat):
+    """
+
+    :param chat: chat for getting message from itself
+    :return: list of not service message soups
+    """
     data_path = os.path.join("data", "chats", chat)
     message_file_paths = [os.path.join(data_path, file) for file in os.listdir(data_path) \
                           if file[-5:] == ".html"]
@@ -102,11 +132,15 @@ def get_message_soups(chat):
 
 
 def get_real_chat_names():
+    """
+
+    :return: dict in format "chat_01" : "real_name"
+    """
     list_chats_file_path = os.path.join("data", "lists", "chats.html")
     with open(list_chats_file_path, encoding="utf-8") as list_chats_file:
         soup = BeautifulSoup(list_chats_file, "lxml")
-    chats_lists = soup.body.find("div", class_="page_wrap").find("div", class_="page_body").find_all("div",
-                                                                                                     class_="entry_list")
+    chats_lists = soup.body.find("div", class_="page_wrap").find("div", class_="page_body")
+    chats_lists = chats_lists.find_all("div", class_="entry_list")
     all_chats = []
     for chats_list in chats_lists:
         all_chats.extend(chats_list.find_all(class_="entry"))
@@ -117,40 +151,73 @@ def get_real_chat_names():
         res_dict[f"chat_{i + 1:0{max_len}}"] = real_name
     return res_dict
 
-# for i in res_dict:
-#     print(i, res_dict[i])
-# print(len(all_chats))
-# chats_path = os.path.join("data", "chats")
-# chat_names = [chat_name for chat_name in os.listdir(chats_path)]
-# print(*chat_names, sep="\n")
+
+def get_real_chat_name(chat_name):
+    """
+
+    :param chat_name:
+    :return: real chat name
+    """
+    global REAL_CHAT_NAMES
+    return REAL_CHAT_NAMES[chat_name]
 
 
-# # tmp_chats = ["chat_001", "chat_002", "chat_003", "chat_004", "chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010", "chat_011", "chat_012", "chat_013", "chat_014"]
-# tmp_chats = ["chat_008"]
-#
-# for chat_name in tmp_chats:
-#     chat = Chat(chat_name, "null")
-#
+def create_message(soup, author):
+    media_wrap = soup.find("div", class_="media_wrap")
+    # media_wrap = soup.find("div", class_="media_wrap")
+    if media_wrap is None:
+        return Message(soup, author)
+        # print("media_wrap is None")
+        # sys.exit(1)
+    else:
+        media_classes = media_wrap.find("div", class_="media")["class"]
+        if "media_photo" in media_classes:
+            return Common(soup, author)
+        elif "media_video" in media_classes:
+            title = media_wrap.find(class_="media").find(class_="body").find(class_="title").text.strip()
+            if title == "Video file":
+                return Common(soup, author)
+            elif title == "Video message":
+                return Circle(soup, author)
+            else:
+                print("Not common and not circle video file", file=sys.stderr)
+                sys.exit(1)
+        elif "media_call" in media_classes:
+            return Call(soup, author)
+        elif "media_voice_message" in media_classes:
+            return Message(soup, author)
+        elif "media_file" in media_classes:
+            return Message(soup, author)
+        elif "media_audio_file" in media_classes:
+            return Message(soup, author)
+        else:
+            print("Message class not found! {message.author, message.datetime}", file=sys.stderr)
+            print(media_classes)
+            sys.exit(1)
+
+
+def init():
+    """
+    Init global variable and prepare program to start
+    :return:
+    """
+    global REAL_CHAT_NAMES
+    REAL_CHAT_NAMES = get_real_chat_names()
+    # print(REAL_CHAT_NAMES)
+
+
+# ======================================================================================================================
+init()
+
+# tmp_chats = ["chat_001", "chat_002", "chat_003", "chat_004", "chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010", "chat_011", "chat_012", "chat_013", "chat_014"]
+tmp_chats = ["chat_008"]
+
+for chat_name in tmp_chats:
+    chat = Chat(chat_name)
+
 # for message in chat.messages:
-#     soup = message.soup
-#     media_wrap = soup.find("div", class_="media_wrap")
-#     if media_wrap is None:
-#         pass
-#     else:
-#         media_classes = media_wrap.find("div", class_="media")["class"]
-#         if "media_photo" in media_classes:
-#             pass
-#         elif "media_call" in media_classes:
-#             pass
-#         elif "media_voice_message" in media_classes:
-#             pass
-#         elif "media_video" in media_classes:
-#             pass
-#         elif "media_file" in media_classes:
-#             pass
-#         elif "media_audio_file" in media_classes:
-#             pass
-#         else:
-#             print(message.author, message.datetime)
-#             print(media_classes)
-#             sys.exit(1)
+#     print(message.author, message.datetime)
+
+
+# if __name__ == "__main__":
+#     init()
