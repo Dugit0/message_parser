@@ -60,7 +60,22 @@ class Call(Message):
             self.duration = int(time.split()[0])
 
 
+class Animation(Message):
+    # GIF animation
+    def __init__(self, soup, author):
+        super().__init__(soup, author)
+
+    pass
+
+
 class Sticker(Message):
+    def __init__(self, soup, author):
+        super().__init__(soup, author)
+
+    pass
+
+
+class Poll(Message):
     def __init__(self, soup, author):
         super().__init__(soup, author)
 
@@ -170,6 +185,14 @@ def create_message(soup, author):
         # print("media_wrap is None")
         # sys.exit(1)
     else:
+        if media_wrap.find("div", class_="media") is None:
+            print("Media classes is None", file=sys.stderr)
+            print("Maybe is poll?", file=sys.stderr)
+            return Message(soup, author)
+            # deb_message = Message(soup, author)
+            # print(deb_message.author, deb_message.datetime, file=sys.stderr)
+            # print(deb_message.soup, file=sys.stderr)
+            # sys.exit(1)
         media_classes = media_wrap.find("div", class_="media")["class"]
         if "media_photo" in media_classes:
             return Common(soup, author)
@@ -179,9 +202,14 @@ def create_message(soup, author):
                 return Common(soup, author)
             elif title == "Video message":
                 return Circle(soup, author)
+            elif title == "Animation":
+                return Animation(soup, author)
             else:
-                print("Not common and not circle video file", file=sys.stderr)
-                sys.exit(1)
+                print(f"Not common and not circle video file:\nTitle is {title}", file=sys.stderr)
+                deb_message = Message(soup, author)
+                print(deb_message.author, deb_message.datetime, file=sys.stderr)
+                return deb_message
+                # sys.exit(1)
         elif "media_call" in media_classes:
             return Call(soup, author)
         elif "media_voice_message" in media_classes:
@@ -189,6 +217,8 @@ def create_message(soup, author):
         elif "media_file" in media_classes:
             return Message(soup, author)
         elif "media_audio_file" in media_classes:
+            return Message(soup, author)
+        elif "media_poll" in media_classes:
             return Message(soup, author)
         else:
             print("Message class not found! {message.author, message.datetime}", file=sys.stderr)
@@ -211,13 +241,17 @@ init()
 
 # tmp_chats = ["chat_001", "chat_002", "chat_003", "chat_004", "chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010", "chat_011", "chat_012", "chat_013", "chat_014"]
 tmp_chats = ["chat_008"]
+tmp_chats = ["chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010"]
+# tmp_chats = ["chat_001", "chat_002", "chat_008"]
 
 for chat_name in tmp_chats:
     chat = Chat(chat_name)
 
-# for message in chat.messages:
-#     print(message.author, message.datetime)
-
+for message in chat.messages:
+    pass
+    # if isinstance(message, Call):
+    #     print(message.author, message.datetime)
+    #     print(message.call_status, message.duration)
 
 # if __name__ == "__main__":
 #     init()
