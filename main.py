@@ -24,7 +24,6 @@ class Message:
     """
 
     """
-
     def __init__(self, soup, author, media=False):
         # self.type = MessageType.default
         self._soup = soup
@@ -84,27 +83,21 @@ class Animation(Message):
     def __init__(self, soup, author):
         super().__init__(soup, author)
 
-    pass
-
 
 class Sticker(Message):
     def __init__(self, soup, author):
         super().__init__(soup, author)
 
-    pass
-
 
 class Poll(Message):
     def __init__(self, soup, author):
         super().__init__(soup, author)
-
     pass
 
 
 class Common(Message):
     def __init__(self, soup, author):
         super().__init__(soup, author)
-
     pass
 
 
@@ -198,7 +191,6 @@ def get_real_chat_name(chat_name):
 
 def create_message(soup, author):
     media_wrap = soup.find("div", class_="media_wrap")
-    # media_wrap = soup.find("div", class_="media_wrap")
     if media_wrap is None:
         return Message(soup, author)
         # print("media_wrap is None")
@@ -214,7 +206,17 @@ def create_message(soup, author):
             # sys.exit(1)
         media_classes = media_wrap.find("div", class_="media")["class"]
         if "media_photo" in media_classes:
-            return Common(soup, author)
+            title = media_wrap.find(class_="media").find(class_="body").find(class_="title").text.strip()
+            if title == "Sticker":
+                return Sticker(soup, author)
+            elif title == "Photo":
+                return Common(soup, author)
+            else:
+                print(f"Not common and not sticker photo file:\nTitle is {title}", file=sys.stderr)
+                deb_message = Message(soup, author)
+                print(deb_message.author, deb_message.datetime, file=sys.stderr)
+                return deb_message
+                # sys.exit(1)
         elif "media_video" in media_classes:
             title = media_wrap.find(class_="media").find(class_="body").find(class_="title").text.strip()
             if title == "Video file":
@@ -234,8 +236,6 @@ def create_message(soup, author):
         elif "media_voice_message" in media_classes:
             return Voice(soup, author)
         elif "media_file" in media_classes:
-            # deb_message = Message(soup, author)
-            # print(deb_message.author, deb_message.datetime)
             return Message(soup, author)
         elif "media_audio_file" in media_classes:
             return Message(soup, author)
@@ -243,7 +243,7 @@ def create_message(soup, author):
             return Message(soup, author)
         else:
             print("Message class not found! {message.author, message.datetime}", file=sys.stderr)
-            print(media_classes)
+            print(media_classes, file=sys.stderr)
             sys.exit(1)
 
 
