@@ -18,11 +18,16 @@ import datetime
 # class ChatType(enum.Enum):
 #     default = 0
 
+# Base class for all messages
 
 class Message:
-    def __init__(self, soup, author):
+    """
+
+    """
+
+    def __init__(self, soup, author, media=False):
         # self.type = MessageType.default
-        self.soup = soup
+        self._soup = soup
         self.author = author
         body = soup.find("div", class_="body")
         my_date_time = body.find("div", class_="date")["title"]
@@ -32,8 +37,15 @@ class Message:
 class Voice(Message):
     def __init__(self, soup, author):
         super().__init__(soup, author)
-
-    pass
+        media_wrap = self._soup.find(class_="body").find(class_="media_wrap")
+        voice_status_text = media_wrap.find(class_="media_voice_message").find(class_="body").find(class_="status")
+        voice_status_text = voice_status_text.text.strip()
+        voice_duration_text = voice_status_text.split(", ")[0]
+        if len(voice_duration_text) > 5:
+            print("Really? Voice message longer than 1 hour??", file=sys.stderr)
+            sys.exit(1)
+        minutes, seconds = map(int, voice_duration_text.split(":"))
+        self.duration = minutes * 60 + seconds
 
 
 class Circle(Message):
@@ -46,7 +58,7 @@ class Circle(Message):
 class Call(Message):
     def __init__(self, soup, author):
         super().__init__(soup, author)
-        media_wrap = self.soup.find(class_="body").find(class_="media_wrap")
+        media_wrap = self._soup.find(class_="body").find(class_="media_wrap")
         call_status_text = media_wrap.find(class_="media_call").find(class_="body").find(class_="status")
         call_status_text = call_status_text.text.strip()
         # Cancelled - отмененный
@@ -191,7 +203,7 @@ def create_message(soup, author):
             return Message(soup, author)
             # deb_message = Message(soup, author)
             # print(deb_message.author, deb_message.datetime, file=sys.stderr)
-            # print(deb_message.soup, file=sys.stderr)
+            # print(deb_message._soup, file=sys.stderr)
             # sys.exit(1)
         media_classes = media_wrap.find("div", class_="media")["class"]
         if "media_photo" in media_classes:
@@ -213,8 +225,10 @@ def create_message(soup, author):
         elif "media_call" in media_classes:
             return Call(soup, author)
         elif "media_voice_message" in media_classes:
-            return Message(soup, author)
+            return Voice(soup, author)
         elif "media_file" in media_classes:
+            # deb_message = Message(soup, author)
+            # print(deb_message.author, deb_message.datetime)
             return Message(soup, author)
         elif "media_audio_file" in media_classes:
             return Message(soup, author)
@@ -240,8 +254,8 @@ def init():
 init()
 
 # tmp_chats = ["chat_001", "chat_002", "chat_003", "chat_004", "chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010", "chat_011", "chat_012", "chat_013", "chat_014"]
+# tmp_chats = ["chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010"]
 tmp_chats = ["chat_008"]
-tmp_chats = ["chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010"]
 # tmp_chats = ["chat_001", "chat_002", "chat_008"]
 
 for chat_name in tmp_chats:
