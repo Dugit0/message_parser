@@ -51,8 +51,15 @@ class Voice(Message):
 class Circle(Message):
     def __init__(self, soup, author):
         super().__init__(soup, author)
-
-    pass
+        media_wrap = self._soup.find(class_="body").find(class_="media_wrap")
+        video_status_text = media_wrap.find(class_="media_video").find(class_="body").find(class_="status")
+        video_status_text = video_status_text.text.strip()
+        video_duration_text = video_status_text.split(", ")[0]
+        if len(video_duration_text) > 5:
+            print("Really? Circle message longer than 1 hour??", file=sys.stderr)
+            sys.exit(1)
+        minutes, seconds = map(int, video_duration_text.split(":"))
+        self.duration = minutes * 60 + seconds
 
 
 class Call(Message):
