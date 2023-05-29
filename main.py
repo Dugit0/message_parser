@@ -24,13 +24,15 @@ class Message:
     """
 
     """
+    __DATE_FORMAT = "%d.%m.%Y %H:%M:%S %Z"
+
     def __init__(self, soup, author, media=False):
         # self.type = MessageType.default
         self._soup = soup
         self.author = author
         body = soup.find("div", class_="body")
         my_date_time = body.find("div", class_="date")["title"]
-        self.datetime = datetime.datetime.strptime(my_date_time, "%d.%m.%Y %H:%M:%S %Z")
+        self.datetime = datetime.datetime.strptime(my_date_time, self.__DATE_FORMAT)
 
 
 class Voice(Message):
@@ -197,6 +199,7 @@ def create_message(soup, author):
         # sys.exit(1)
     else:
         if media_wrap.find("div", class_="media") is None:
+            # TODO rewrite on logger
             print("Media classes is None", file=sys.stderr)
             print("Maybe is poll?", file=sys.stderr)
             return Message(soup, author)
