@@ -22,7 +22,12 @@ import datetime
 
 class Message:
     """
-
+    :param _soup: source soup, protected
+    :type _soup: bs4.element.Tag
+    :param author: author of message
+    :type author: str
+    :param datetime: sending date and time of message
+    :type datetime: datetime.datetime
     """
     __DATE_FORMAT = "%d.%m.%Y %H:%M:%S %Z"
 
@@ -36,6 +41,10 @@ class Message:
 
 
 class Voice(Message):
+    """
+    :param duration: duration of message (in seconds)
+    :type duration: int
+    """
     def __init__(self, soup, author):
         super().__init__(soup, author)
         media_wrap = self._soup.find(class_="body").find(class_="media_wrap")
@@ -50,6 +59,10 @@ class Voice(Message):
 
 
 class Circle(Message):
+    """
+    :param duration: duration of message (in seconds)
+    :type duration: int
+    """
     def __init__(self, soup, author):
         super().__init__(soup, author)
         media_wrap = self._soup.find(class_="body").find(class_="media_wrap")
@@ -64,6 +77,12 @@ class Circle(Message):
 
 
 class Call(Message):
+    """
+    :param duration: duration of call (in seconds) (-1 if no duration)
+    :type duration: int
+    :param call_status: call status (Incoming, Outgoing, Cancelled, Declined)
+    :type call_status: str
+    """
     def __init__(self, soup, author):
         super().__init__(soup, author)
         media_wrap = self._soup.find(class_="body").find(class_="media_wrap")
@@ -71,6 +90,7 @@ class Call(Message):
         call_status_text = call_status_text.text.strip()
         # Cancelled - отмененный
         self.call_status = call_status_text.split()[0]
+        print(call_status_text)
         left_ind = call_status_text.find("(")
         if left_ind == -1:
             self.duration = -1
@@ -111,6 +131,12 @@ class Forwarded(Message):
 
 
 class Chat:
+    """
+    :param chat_name: name of chat
+    :type chat_name: str
+    :param messages: list of messages
+    :type messages: list of class Message children
+    """
     def __init__(self, file_chat_name):
         self.chat_name = get_real_chat_name(file_chat_name)
         soups = get_message_soups(file_chat_name)
@@ -125,8 +151,9 @@ class Chat:
 
 
 def get_all_message_files():
+    #TODO: сделать параметр, от которого будет строиться путь к выгруженным сообщениям
+    # (т.е. предусмотреть случай, когда main.py и data лежат в разных местах)
     """
-
     :return: All paths for message file in all chats
     """
     chats_path = os.path.join("data", "chats")
@@ -140,7 +167,6 @@ def get_all_message_files():
 
 def get_message_soups(chat):
     """
-
     :param chat: chat for getting message from itself
     :return: list of not service message soups
     """
@@ -162,8 +188,7 @@ def get_message_soups(chat):
 
 def get_real_chat_names():
     """
-
-    :return: dict in format "chat_01" : "real_name"
+    :return: dict in format "chat_01" : "real_name" (number of zeros depended on size max chat number)
     """
     list_chats_file_path = os.path.join("data", "lists", "chats.html")
     with open(list_chats_file_path, encoding="utf-8") as list_chats_file:
@@ -183,7 +208,6 @@ def get_real_chat_names():
 
 def get_real_chat_name(chat_name):
     """
-
     :param chat_name:
     :return: real chat name
     """
@@ -272,6 +296,7 @@ for chat_name in tmp_chats:
     chat = Chat(chat_name)
 
 for message in chat.messages:
+    # print(message.author, message.datetime)
     pass
     # if isinstance(message, Call):
     #     print(message.author, message.datetime)
