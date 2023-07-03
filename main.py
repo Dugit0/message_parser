@@ -90,7 +90,6 @@ class Call(Message):
         call_status_text = call_status_text.text.strip()
         # Cancelled - отмененный
         self.call_status = call_status_text.split()[0]
-        print(call_status_text)
         left_ind = call_status_text.find("(")
         if left_ind == -1:
             self.duration = -1
@@ -118,8 +117,28 @@ class Poll(Message):
 
 
 class Common(Message):
+    """
+    :param text: message text ("" if no text)
+    :type text: str
+    :param flag_photo: True if message include photo else False
+    :type flag_photo: bool
+    :param flag_video: True if message include video else False
+    :type flag_video: bool
+    """
     def __init__(self, soup, author):
         super().__init__(soup, author)
+        body = self._soup.find(class_="body")
+        media_wrap = body.find(class_="media_wrap")
+        text = body.find(class_="text")
+        if text is None:
+            self.text = ""
+        else:
+            self.text = text.text
+
+        print(media_wrap)
+        # print(text)
+        # print(self._soup.prettify())
+        # sys.exit(0)
     pass
 
 
@@ -218,7 +237,8 @@ def get_real_chat_name(chat_name):
 def create_message(soup, author):
     media_wrap = soup.find("div", class_="media_wrap")
     if media_wrap is None:
-        return Message(soup, author)
+        return Common(soup, author)
+        # return Message(soup, author)
         # print("media_wrap is None")
         # sys.exit(1)
     else:
