@@ -130,12 +130,24 @@ class Common(Message):
         body = self._soup.find(class_="body")
         media_wrap = body.find(class_="media_wrap")
         text = body.find(class_="text")
-        if text is None:
-            self.text = ""
-        else:
+        self.text = ""
+        self.flag_photo = False
+        self.flag_video = False
+        if not (text is None):
             self.text = text.text
+        if not (media_wrap is None):
+            # print(media_wrap.prettify())
+            media_type = media_wrap.find(class_="title").text.strip()
+            if media_type == "Photo":
+                self.flag_photo = True
+            elif media_type == "Video file":
+                self.flag_video = True
+            else:
+                print("media in Common message isn't photo or video. Media is", media_type, sep="\n", file=sys.stderr)
+                sys.exit(1)
+            # print("-----------\n"*3)
+            pass
 
-        print(media_wrap)
         # print(text)
         # print(self._soup.prettify())
         # sys.exit(0)
@@ -311,6 +323,7 @@ init()
 # tmp_chats = ["chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010"]
 tmp_chats = ["chat_008"]
 # tmp_chats = ["chat_001", "chat_002", "chat_008"]
+# tmp_chats = ["chat_005", "chat_006", "chat_007", "chat_008", "chat_009", "chat_010"]
 
 for chat_name in tmp_chats:
     chat = Chat(chat_name)
